@@ -1,0 +1,22 @@
+"use client";
+
+import { FormEvent, useMemo, useState } from "react";
+import { CalendarPlus, PhoneCall } from "lucide-react";
+import { useLoans } from "@/components/loan-provider";
+import { money, PageHeader, StatusBadge } from "@/components/ui";
+import type { ContactChannel, RecoveryAction } from "@/lib/types";
+
+export default function RecoveryPage() {
+  const { borrowers, actions, addAction } = useLoans();
+  const [show, setShow] = useState(false);
+  const [selected, setSelected] = useState("");
+  const queue = useMemo(()=>borrowers.filter(b=>b.outstanding>0 && (b.daysPastDue>0 || b.status === "Due Soon")).sort((a,b)=>b.riskScore-a.riskScore),[borrowers]);
+  function open(id:string){setSelected(id);setShow(true)}
+  function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();const fd=new FormData(e.currentTarget);const borrowerId=String(fd.get("borrowerId"));const b=borrowers.find(x=>x.id===borrowerId)!;const item:RecoveryAction={id:`a-${Date.now()}`,borrowerId,borrowerName:b.name,channel:String(fd.get("channel")) as ContactChannel,note:String(fd.get("note")),date:String(fd.get("date")),outcome:String(fd.get("outcome")) as RecoveryAction["outcome"],nextFollowUp:String(fd.get("nextFollowUp"))||undefined};addAction(item);setShow(false)}
+  return <div className="page-wrap"><PageHeader eyebrow="Collections" title="Recovery Queue" subtitle="Work high-priority accounts first and log every borrower interaction." action={<button className="button primary" onClick={()=>open(queue[0]?.id || "")}><CalendarPlus size={16}/> Log action</button>}/>
+    <div className="recovery-layout"><div className="queue-list">{queue.map((b,i)=><div className="queue-card" key={b.id}><div className="queue-rank">{String(i+1).padStart(2,"0")}</div><div className="queue-main"><div className="queue-title"><div><h3>{b.name}</h3><span>{b.loanId}</span></div><StatusBadge status={b.status}/></div><div className="queue-metrics"><div><span>Outstanding</span><strong>{money(b.outstanding)}</strong></div><div><span>Days past due</span><strong>{b.daysPastDue}</strong></div><div><span>Risk</span><strong>{b.riskScore}/100</strong></div><div><span>Installment</span><strong>{money(b.installment)}</strong></div></div><div className="queue-footer"><span>{b.phone}</span><button className="button secondary small-btn" onClick={()=>open(b.id)}><PhoneCall size={15}/> Log contact</button></div></div></div>)}</div>
+      <div className="panel sticky-panel"><h2>Recent actions</h2><p className="panel-copy">Latest collection activity across the portfolio.</p><div className="activity-list compact-list">{actions.slice(0,8).map(a=><div className="activity-item" key={a.id}><div className="activity-dot"/><div className="activity-body"><div><strong>{a.borrowerName}</strong><span className="activity-channel">{a.channel}</span></div><p>{a.note}</p><small>{a.date} · {a.outcome}</small></div></div>)}</div></div>
+    </div>
+    {show && <div className="modal-backdrop" onMouseDown={()=>setShow(false)}><div className="modal compact" onMouseDown={e=>e.stopPropagation()}><div className="modal-header"><div><h2>Log recovery action</h2><p>Document a borrower contact or follow-up.</p></div><button className="icon-button" onClick={()=>setShow(false)}>×</button></div><form className="form-grid" onSubmit={submit}><label className="full-span">Borrower<select name="borrowerId" value={selected} onChange={e=>setSelected(e.target.value)} required><option value="" disabled>Select borrower</option>{borrowers.filter(b=>b.outstanding>0).map(b=><option value={b.id} key={b.id}>{b.name} · {b.loanId}</option>)}</select></label><label>Channel<select name="channel"><option>Call</option><option>SMS</option><option>Email</option><option>Visit</option></select></label><label>Outcome<select name="outcome"><option>Promise to pay</option><option>No answer</option><option>Paid</option><option>Dispute</option><option>Follow-up</option></select></label><label>Date<input name="date" type="date" defaultValue="2026-09-01" required/></label><label>Next follow-up<input name="nextFollowUp" type="date"/></label><label className="full-span">Notes<textarea name="note" rows={4} required placeholder="Summary of the conversation..."/></label><div className="form-actions full-span"><button type="button" className="button secondary" onClick={()=>setShow(false)}>Cancel</button><button className="button primary">Save action</button></div></form></div></div>}
+  </div>;
+}

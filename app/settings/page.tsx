@@ -1,0 +1,7 @@
+"use client";
+
+import { Database, RotateCcw, ShieldCheck } from "lucide-react";
+import { useLoans } from "@/components/loan-provider";
+import { PageHeader } from "@/components/ui";
+
+export default function SettingsPage(){const {resetDemo}=useLoans();return <div className="page-wrap"><PageHeader eyebrow="Configuration" title="Settings" subtitle="Manage application preferences and demo data."/><div className="settings-grid"><div className="panel settings-card"><div className="settings-icon"><Database/></div><div><h2>Data storage</h2><p>This starter uses browser localStorage, so it deploys to Vercel with zero database configuration.</p><span className="info-note">For production, replace the provider with Supabase/Postgres for shared multi-user data.</span></div></div><div className="panel settings-card"><div className="settings-icon"><ShieldCheck/></div><div><h2>Production checklist</h2><p>Add authentication, role permissions, audit logs, encrypted secrets, server-side validation, and your required lending/compliance controls before using real customer data.</p></div></div><div className="panel settings-card"><div className="settings-icon"><RotateCcw/></div><div><h2>Reset demo data</h2><p>Restore the original borrowers, payments, and recovery actions.</p><button className="button secondary" onClick={()=>{resetDemo();alert("Demo data reset.")}}><RotateCcw size={15}/> Reset demo</button></div></div></div></div>}
