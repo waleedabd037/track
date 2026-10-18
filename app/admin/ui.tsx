@@ -26,6 +26,8 @@ export default function AdminDashboard() {
   const [phone, setPhone] = useState('');
   const [upiValue, setUpiValue] = useState('');
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
+  const [editingUpiCustomerId, setEditingUpiCustomerId] = useState<string | null>(null);
+  const [editingUpiValue, setEditingUpiValue] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [title, setTitle] = useState('');
   const [total, setTotal] = useState('');
@@ -115,21 +117,39 @@ export default function AdminDashboard() {
     } finally { setBusy(false); }
   }
 
-  async function clearCustomerApi(customer: Customer) {
-    if (!customer.upi) return;
-    if (!window.confirm(`Delete the UPI ID for ${customer.name}?`)) return;
-    setError(''); setMessage(''); setBusy(true);
+  function startEditingUpi(customer: Customer) {
+    setEditingUpiCustomerId(customer.id);
+    setEditingUpiValue(customer.upi || '');
+    setError('');
+    setMessage('');
+  }
+
+  async function saveCustomerUpi(customer: Customer) {
+    setError('');
+    setMessage('');
+    setBusy(true);
     try {
       const response = await fetch('/api/admin/customers', {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: customer.id, name: customer.name, phone: customer.phone, upi: '' }),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          upi: editingUpiValue.trim(),
+        }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Could not delete UPI ID.');
-      setMessage('UPI ID deleted.'); await load();
+      if (!response.ok) throw new Error(result.error || 'Could not update UPI ID.');
+      setEditingUpiCustomerId(null);
+      setEditingUpiValue('');
+      setMessage(editingUpiValue.trim() ? 'UPI ID updated.' : 'UPI ID cleared. This field is optional.');
+      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete UPI ID.');
-    } finally { setBusy(false); }
+      setError(err instanceof Error ? err.message : 'Could not update UPI ID.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function resetLoanForm() {
@@ -196,7 +216,7 @@ export default function AdminDashboard() {
     <div className="admin-grid" style={{ marginTop: 22 }}>
       <section className="panel">
         <h2 style={{ margin: '0 0 6px', fontSize: 19 }}>{editingCustomerId ? 'Edit customer' : 'Add customer'}</h2>
-        <p className="muted small">The UPI ID is managed here and also appears on the customer account page.</p>
+        <p className="muted small">UPI ID is optional. You can edit it here or directly in the customer records table.</p>
         <form className="stack" onSubmit={saveCustomer} style={{ marginTop: 18 }}>
           <label>Customer full name<input className="field" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required placeholder="Customer name" /></label>
           <label>Mobile number<input className="field" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+92 300 1234567" /></label>
@@ -229,10 +249,30 @@ export default function AdminDashboard() {
         <div className="panel table-wrap" style={{ padding: 10 }}><table><thead><tr><th>Customer</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>
           {customers.map((customer) => <tr key={customer.id}>
             <td>{customer.name}<div className="muted small">{customer.phone}</div></td>
-            <td style={{ maxWidth: 260, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>{customer.upi || <span className="muted">Not set</span>}</td>
+            <td style={{ maxWidth: 300, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>
+              {editingUpiCustomerId === customer.id ? (
+                <div className="stack" style={{ minWidth: 180, gap: 8 }}>
+                  <input
+                    className="field"
+                    value={editingUpiValue}
+                    onChange={(event) => setEditingUpiValue(event.target.value)}
+                    maxLength={2000}
+                    placeholder="Optional UPI ID"
+                    aria-label={`UPI ID for ${customer.name}`}
+                  />
+                  <span className="muted small">Leave blank to remove the UPI ID.</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    <button type="button" className="btn" onClick={() => void saveCustomerUpi(customer)} disabled={busy}>
+                      {busy ? 'Saving…' : 'Save UPI'}
+                    </button>
+                    <button type="button" className="btn secondary" onClick={() => { setEditingUpiCustomerId(null); setEditingUpiValue(''); }} disabled={busy}>Cancel</button>
+                  </div>
+                </div>
+              ) : customer.upi || <span className="muted">Not set</span>}
+            </td>
             <td><div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              <button type="button" className="btn secondary" onClick={() => editCustomer(customer)} disabled={busy}>Edit</button>
-              {customer.upi && <button type="button" className="btn secondary" onClick={() => void clearCustomerApi(customer)} disabled={busy}>Delete UPI</button>}
+              <button type="button" className="btn secondary" onClick={() => editCustomer(customer)} disabled={busy}>Edit customer</button>
+              {editingUpiCustomerId !== customer.id && <button type="button" className="btn secondary" onClick={() => startEditingUpi(customer)} disabled={busy}>Edit UPI</button>}
               <button type="button" className="btn danger" onClick={() => void deleteCustomer(customer)} disabled={busy}>Delete person</button>
             </div></td>
           </tr>)}
