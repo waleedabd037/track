@@ -28,6 +28,8 @@ export default function AdminDashboard() {
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [editingUpiCustomerId, setEditingUpiCustomerId] = useState<string | null>(null);
   const [editingUpiValue, setEditingUpiValue] = useState('');
+  const [upiManagerCustomerId, setUpiManagerCustomerId] = useState('');
+  const [upiManagerValue, setUpiManagerValue] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [title, setTitle] = useState('');
   const [total, setTotal] = useState('');
@@ -60,6 +62,12 @@ export default function AdminDashboard() {
       setCustomers(nextCustomers);
       setLoans(loanData.loans || []);
       setCustomerId((current) => current && nextCustomers.some((c) => c.id === current) ? current : (nextCustomers[0]?.id || ''));
+      setUpiManagerCustomerId((current) => {
+        const nextId = current && nextCustomers.some((c) => c.id === current) ? current : (nextCustomers[0]?.id || '');
+        const selected = nextCustomers.find((c) => c.id === nextId);
+        setUpiManagerValue(selected?.upi || '');
+        return nextId;
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load the dashboard.');
     } finally {
@@ -122,6 +130,37 @@ export default function AdminDashboard() {
     setEditingUpiValue(customer.upi || '');
     setError('');
     setMessage('');
+  }
+
+  async function saveManagedUpi() {
+    const customer = customers.find((item) => item.id === upiManagerCustomerId);
+    if (!customer) {
+      setError('Choose a customer first.');
+      return;
+    }
+    setError('');
+    setMessage('');
+    setBusy(true);
+    try {
+      const response = await fetch('/api/admin/customers', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          upi: upiManagerValue.trim(),
+        }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not update UPI ID.');
+      setMessage(upiManagerValue.trim() ? `UPI ID saved for ${customer.name}.` : `UPI ID cleared for ${customer.name}.`);
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update UPI ID.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function saveCustomerUpi(customer: Customer) {
@@ -242,6 +281,34 @@ export default function AdminDashboard() {
         </form>
       </section>
     </div>
+
+    <section className="panel" style={{ marginTop: 28 }}>
+      <div className="section-head" style={{ marginTop: 0 }}>
+        <div>
+          <h2 style={{ margin: 0 }}>Manage customer UPI</h2>
+          <p className="muted small" style={{ margin: '6px 0 0' }}>Optional field. Choose a customer to add, change, or clear their UPI ID.</p>
+        </div>
+      </div>
+      {customers.length === 0 ? <p className="muted small">Add a customer first to manage a UPI ID.</p> :
+        <div className="stack" style={{ marginTop: 14 }}>
+          <label>Customer
+            <select className="field" value={upiManagerCustomerId} onChange={(event) => {
+              const id = event.target.value;
+              setUpiManagerCustomerId(id);
+              setUpiManagerValue(customers.find((customer) => customer.id === id)?.upi || '');
+            }}>
+              {customers.map((customer) => <option key={customer.id} value={customer.id}>{customer.name} · {customer.phone}</option>)}
+            </select>
+          </label>
+          <label>UPI ID (optional)
+            <input className="field" value={upiManagerValue} onChange={(event) => setUpiManagerValue(event.target.value)} maxLength={2000} placeholder="Enter UPI ID, or leave blank to remove it" />
+          </label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            <button type="button" className="btn" onClick={() => void saveManagedUpi()} disabled={busy || !upiManagerCustomerId}>{busy ? 'Saving…' : 'Save UPI ID'}</button>
+            <button type="button" className="btn secondary" onClick={() => setUpiManagerValue('')} disabled={busy || !upiManagerCustomerId}>Clear field</button>
+          </div>
+        </div>}
+    </section>
 
     <section style={{ marginTop: 28 }}>
       <div className="section-head"><h2>Customer records</h2><span className="small muted">{customers.length} customers</span></div>
