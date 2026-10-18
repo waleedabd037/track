@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type Customer = { id: string; name: string; phone: string; api: string | null };
+type Customer = { id: string; name: string; phone: string; upi: string | null };
 type Loan = {
   id: string;
   customer_id: string;
@@ -24,7 +24,7 @@ export default function AdminDashboard() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [apiValue, setApiValue] = useState('');
+  const [upiValue, setUpiValue] = useState('');
   const [editingCustomerId, setEditingCustomerId] = useState<string | null>(null);
   const [customerId, setCustomerId] = useState('');
   const [title, setTitle] = useState('');
@@ -68,14 +68,14 @@ export default function AdminDashboard() {
   useEffect(() => { void load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   function resetCustomerForm() {
-    setName(''); setPhone(''); setApiValue(''); setEditingCustomerId(null);
+    setName(''); setPhone(''); setUpiValue(''); setEditingCustomerId(null);
   }
 
   function editCustomer(customer: Customer) {
     setEditingCustomerId(customer.id);
     setName(customer.name);
     setPhone(customer.phone);
-    setApiValue(customer.api || '');
+    setUpiValue(customer.upi || '');
     setError(''); setMessage('');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -86,7 +86,7 @@ export default function AdminDashboard() {
       const response = await fetch('/api/admin/customers', {
         method: editingCustomerId ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingCustomerId, name, phone, api: apiValue }),
+        body: JSON.stringify({ id: editingCustomerId, name, phone, upi: upiValue }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not save customer.');
@@ -116,19 +116,19 @@ export default function AdminDashboard() {
   }
 
   async function clearCustomerApi(customer: Customer) {
-    if (!customer.api) return;
-    if (!window.confirm(`Delete the API field for ${customer.name}?`)) return;
+    if (!customer.upi) return;
+    if (!window.confirm(`Delete the UPI ID for ${customer.name}?`)) return;
     setError(''); setMessage(''); setBusy(true);
     try {
       const response = await fetch('/api/admin/customers', {
         method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: customer.id, name: customer.name, phone: customer.phone, api: '' }),
+        body: JSON.stringify({ id: customer.id, name: customer.name, phone: customer.phone, upi: '' }),
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || 'Could not delete API field.');
-      setMessage('API field deleted.'); await load();
+      if (!response.ok) throw new Error(result.error || 'Could not delete UPI ID.');
+      setMessage('UPI ID deleted.'); await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete API field.');
+      setError(err instanceof Error ? err.message : 'Could not delete UPI ID.');
     } finally { setBusy(false); }
   }
 
@@ -196,11 +196,11 @@ export default function AdminDashboard() {
     <div className="admin-grid" style={{ marginTop: 22 }}>
       <section className="panel">
         <h2 style={{ margin: '0 0 6px', fontSize: 19 }}>{editingCustomerId ? 'Edit customer' : 'Add customer'}</h2>
-        <p className="muted small">The API field is private to the admin dashboard.</p>
+        <p className="muted small">The UPI ID is managed here and also appears on the customer account page.</p>
         <form className="stack" onSubmit={saveCustomer} style={{ marginTop: 18 }}>
           <label>Customer full name<input className="field" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required placeholder="Customer name" /></label>
           <label>Mobile number<input className="field" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+92 300 1234567" /></label>
-          <label>API field<textarea className="field" value={apiValue} onChange={(e) => setApiValue(e.target.value)} maxLength={2000} rows={3} placeholder="Optional API value" /></label>
+          <label>UPI ID<textarea className="field" value={upiValue} onChange={(e) => setUpiValue(e.target.value)} maxLength={2000} rows={3} placeholder="Optional UPI ID" /></label>
           <button className="btn" disabled={busy}>{busy ? 'Saving…' : editingCustomerId ? 'Save customer changes' : 'Save customer'}</button>
           {editingCustomerId && <button type="button" className="btn secondary" onClick={resetCustomerForm}>Cancel editing</button>}
         </form>
@@ -226,13 +226,13 @@ export default function AdminDashboard() {
     <section style={{ marginTop: 28 }}>
       <div className="section-head"><h2>Customer records</h2><span className="small muted">{customers.length} customers</span></div>
       {loading ? <div className="empty">Loading records…</div> : !customers.length ? <div className="empty">No customers added yet.</div> :
-        <div className="panel table-wrap" style={{ padding: 10 }}><table><thead><tr><th>Customer</th><th>API field</th><th>Actions</th></tr></thead><tbody>
+        <div className="panel table-wrap" style={{ padding: 10 }}><table><thead><tr><th>Customer</th><th>UPI ID</th><th>Actions</th></tr></thead><tbody>
           {customers.map((customer) => <tr key={customer.id}>
             <td>{customer.name}<div className="muted small">{customer.phone}</div></td>
-            <td style={{ maxWidth: 260, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>{customer.api || <span className="muted">Not set</span>}</td>
+            <td style={{ maxWidth: 260, overflowWrap: 'anywhere', whiteSpace: 'pre-wrap' }}>{customer.upi || <span className="muted">Not set</span>}</td>
             <td><div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               <button type="button" className="btn secondary" onClick={() => editCustomer(customer)} disabled={busy}>Edit</button>
-              {customer.api && <button type="button" className="btn secondary" onClick={() => void clearCustomerApi(customer)} disabled={busy}>Delete API</button>}
+              {customer.upi && <button type="button" className="btn secondary" onClick={() => void clearCustomerApi(customer)} disabled={busy}>Delete UPI</button>}
               <button type="button" className="btn danger" onClick={() => void deleteCustomer(customer)} disabled={busy}>Delete person</button>
             </div></td>
           </tr>)}
@@ -251,6 +251,6 @@ export default function AdminDashboard() {
           </tr>)}
         </tbody></table></div>}
     </section>
-    <p className="notice">Deleting a person permanently deletes all their loan records too. Customer API values are only shown in the admin dashboard. Before using real financial data, consider adding OTP verification and rate limiting to the public phone lookup.</p>
+    <p className="notice">Deleting a person permanently deletes all their loan records too. Customer UPI IDs are also shown on the matching customer account page. Before using real financial data, consider adding OTP verification and rate limiting to the public phone lookup.</p>
   </>;
 }

@@ -5,6 +5,7 @@ create table if not exists public.customers (
   id uuid primary key default gen_random_uuid(),
   name text not null check (char_length(name) between 1 and 120),
   phone text not null unique check (phone ~ '^\+?[0-9]{7,15}$'),
+  upi text,
   created_at timestamptz not null default now()
 );
 

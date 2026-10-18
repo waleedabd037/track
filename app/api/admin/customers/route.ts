@@ -6,11 +6,11 @@ function normalizePhone(value: unknown) {
   return String(value ?? '').replace(/[\s()-]/g, '');
 }
 
-function validCustomer(name: string, phone: string, api: string) {
+function validCustomer(name: string, phone: string, upi: string) {
   return Boolean(
     name && name.length <= 120 &&
     /^\+?[0-9]{7,15}$/.test(phone) &&
-    api.length <= 2000
+    upi.length <= 2000
   );
 }
 
@@ -18,7 +18,7 @@ export async function GET() {
   if (!await isAdmin()) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const { data, error } = await supabase
     .from('customers')
-    .select('id,name,phone,api,created_at')
+    .select('id,name,phone,upi,created_at')
     .order('created_at', { ascending: false });
   if (error) return NextResponse.json({ error: 'Could not load customers.' }, { status: 500 });
   return NextResponse.json({ customers: data });
@@ -30,14 +30,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     const name = String(body.name ?? '').trim();
     const phone = normalizePhone(body.phone);
-    const api = String(body.api ?? '').trim();
-    if (!validCustomer(name, phone, api)) {
-      return NextResponse.json({ error: 'Enter a name, valid phone number, and API value up to 2000 characters.' }, { status: 400 });
+    const upi = String(body.upi ?? '').trim();
+    if (!validCustomer(name, phone, upi)) {
+      return NextResponse.json({ error: 'Enter a name, valid phone number, and UPI ID up to 2000 characters.' }, { status: 400 });
     }
     const { data, error } = await supabase
       .from('customers')
-      .insert({ name, phone, api: api || null })
-      .select('id,name,phone,api')
+      .insert({ name, phone, upi: upi || null })
+      .select('id,name,phone,upi')
       .single();
     if (error) {
       if (error.code === '23505') return NextResponse.json({ error: 'That phone number is already registered.' }, { status: 409 });
@@ -56,15 +56,15 @@ export async function PATCH(request: Request) {
     const id = String(body.id ?? '');
     const name = String(body.name ?? '').trim();
     const phone = normalizePhone(body.phone);
-    const api = String(body.api ?? '').trim();
-    if (!id || !validCustomer(name, phone, api)) {
-      return NextResponse.json({ error: 'Enter a name, valid phone number, and API value up to 2000 characters.' }, { status: 400 });
+    const upi = String(body.upi ?? '').trim();
+    if (!id || !validCustomer(name, phone, upi)) {
+      return NextResponse.json({ error: 'Enter a name, valid phone number, and UPI ID up to 2000 characters.' }, { status: 400 });
     }
     const { data, error } = await supabase
       .from('customers')
-      .update({ name, phone, api: api || null })
+      .update({ name, phone, upi: upi || null })
       .eq('id', id)
-      .select('id,name,phone,api')
+      .select('id,name,phone,upi')
       .maybeSingle();
     if (error) {
       if (error.code === '23505') return NextResponse.json({ error: 'That phone number is already registered.' }, { status: 409 });

@@ -5,7 +5,8 @@ A mobile-friendly loan tracker with:
 - Customer loan summary: total loaned, returned, remaining
 - Lending / Unsettled / Completed filters and a Detail view
 - Admin password login, signed HttpOnly session cookie, and admin-only dashboard
-- Admin forms to add customers and loan records
+- Admin forms to add, edit, and delete customers and loan records
+- Admin-managed UPI ID for each customer account; shown on that customer's loan page
 - Supabase PostgreSQL schema
 
 ## 1. Requirements
@@ -26,7 +27,7 @@ Fill in `.env.local`:
 Generate a secret with `openssl rand -base64 32` or another secure password generator. Do not commit `.env.local`.
 
 ## 3. Create database tables
-Open Supabase → SQL Editor, then run `supabase/schema.sql`.
+For a new database, open Supabase → SQL Editor and run `supabase/schema.sql`. For an existing deployed database, run `supabase/migration_add_customer_upi.sql` once to add the UPI ID column without removing existing records.
 
 ## 4. Run locally
 ```bash
