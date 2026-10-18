@@ -10,9 +10,9 @@ function signPayment(amount: string, upiId: string, expires: string, secret: str
 
 export async function POST(request: Request) {
   try {
-    const secret = process.env.PAYMENT_KEY;
+    const secret = process.env.PAYMENT_SECRET;
     if (!secret) {
-      console.error('Missing PAYMENT_KEY environment variable.');
+      console.error('Missing PAYMENT_SECRET environment variable.');
       return NextResponse.json({ error: 'Payment service is not configured yet.' }, { status: 503 });
     }
 
