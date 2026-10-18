@@ -199,7 +199,7 @@ export default function AdminDashboard() {
         <p className="muted small">The UPI ID is managed here and also appears on the customer account page.</p>
         <form className="stack" onSubmit={saveCustomer} style={{ marginTop: 18 }}>
           <label>Customer full name<input className="field" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} required placeholder="Customer name" /></label>
-          <label>Mobile number<input className="field" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+92 300 1234567" /></label>
+          <label>Mobile number<input className="field" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} required placeholder="+91 300 1234567" /></label>
           <label>UPI ID<textarea className="field" value={upiValue} onChange={(e) => setUpiValue(e.target.value)} maxLength={2000} rows={3} placeholder="Optional UPI ID" /></label>
           <button className="btn" disabled={busy}>{busy ? 'Saving…' : editingCustomerId ? 'Save customer changes' : 'Save customer'}</button>
           {editingCustomerId && <button type="button" className="btn secondary" onClick={resetCustomerForm}>Cancel editing</button>}
