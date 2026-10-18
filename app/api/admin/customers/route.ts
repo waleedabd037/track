@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     const phone = normalizePhone(body.phone);
     const upi = String(body.upi ?? '').trim();
     if (!validCustomer(name, phone, upi)) {
-      return NextResponse.json({ error: 'Enter a name and valid phone number. UPI ID is optional and may be up to 2000 characters.' }, { status: 400 });
+      return NextResponse.json({ error: 'Enter a name, valid phone number, and UPI ID up to 2000 characters.' }, { status: 400 });
     }
     const { data, error } = await supabase
       .from('customers')
@@ -58,7 +58,7 @@ export async function PATCH(request: Request) {
     const phone = normalizePhone(body.phone);
     const upi = String(body.upi ?? '').trim();
     if (!id || !validCustomer(name, phone, upi)) {
-      return NextResponse.json({ error: 'Enter a name and valid phone number. UPI ID is optional and may be up to 2000 characters.' }, { status: 400 });
+      return NextResponse.json({ error: 'Enter a name, valid phone number, and UPI ID up to 2000 characters.' }, { status: 400 });
     }
     const { data, error } = await supabase
       .from('customers')

@@ -34,6 +34,8 @@ export default function LoansPage() {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('All');
   const [selected, setSelected] = useState<Loan | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
 
   useEffect(() => {
     const phone = sessionStorage.getItem('loanLookupPhone');
@@ -59,6 +61,26 @@ export default function LoansPage() {
         setError(reason instanceof Error ? reason.message : 'Could not load loans');
       });
   }, []);
+
+  async function makePayment() {
+    if (!data) return;
+    setPaymentLoading(true);
+    setPaymentError('');
+    try {
+      const response = await fetch('/api/payment-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: data.phone }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not create payment link.');
+      window.location.assign(result.url);
+    } catch (reason) {
+      setPaymentError(reason instanceof Error ? reason.message : 'Could not create payment link.');
+    } finally {
+      setPaymentLoading(false);
+    }
+  }
 
   const filteredLoans = (data?.loans ?? []).filter(
     (loan) => filter === 'All' || loan.status === filter,
@@ -145,6 +167,17 @@ export default function LoansPage() {
               </div>
             </div>
           </div>
+          {remaining > 0 && (
+            <div style={{ marginTop: 18 }}>
+              <button className="btn" type="button" onClick={makePayment} disabled={paymentLoading} style={{ width: '100%' }}>
+                {paymentLoading ? 'Preparing payment…' : 'Make Payment'}
+              </button>
+              {paymentError && <div className="error" role="alert">{paymentError}</div>}
+              <p className="muted small" style={{ margin: '9px 0 0', lineHeight: 1.5 }}>
+                Opens a secure payment link for your outstanding balance using the UPI ID registered to your account.
+              </p>
+            </div>
+          )}
         </section>
 
         <div className="section-head">

@@ -46,3 +46,12 @@ Open http://localhost:3000. Go to **Administrator sign in** to add customers and
 3. The service role key bypasses Supabase RLS, so keep it server-only. Never expose it in client components or public environment variables.
 4. Use HTTPS in production, set strong secrets, and consider individual admin accounts, audit logs, backups, and stricter deployment controls.
 5. This starter tracks amounts and statuses, but does not yet store a payment-by-payment ledger. For a regulated or audited lending workflow, record each repayment as its own immutable transaction.
+
+
+## UPI payment links
+
+The public loan account page includes **Make Payment** when the customer has an outstanding balance. The server calculates the balance from all of that customer's loans and signs a 15-minute payment URL containing the amount and the customer's saved UPI ID. The QR endpoint verifies the signature and expiry before returning a QR code.
+
+Add `PAYMENT_SECRET` to `.env.local` and to your Vercel project environment variables. Use a long, random value and keep it server-side; do not use the same value as your admin password or commit it to source control. Redeploy after adding it.
+
+The payment page retains UPI deep-link launching, provider website fallbacks, copy amount/UPI, and QR generation. The UTR field currently only displays a message; it does not verify payments or record a repayment. A successful UPI transfer must still be checked and recorded by the administrator.
